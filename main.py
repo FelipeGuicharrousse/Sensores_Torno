@@ -1,31 +1,46 @@
 import socket
+import asyncio
 from fastapi import FastAPI
 
 app = FastAPI()
 
-# Configurar el servidor UDP
-UDP_IP = "127.0.0.1"  # Dirección IP del servidor
-UDP_PORT = 5005  # Puerto UDP que escuchará
+# Configurar la información de los sensores
+SENSOR_INFO = [
+    {"port": 5000, "name": "Sensor 1"},
+    {"port": 5500, "name": "Sensor 2"},
+    {"port": 6000, "name": "Sensor 3"}
+]
 BUFFER_SIZE = 1024  # Tamaño del búfer de recepción
 
-# Crear el socket UDP
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((UDP_IP, UDP_PORT))
+# Función para recibir los datos de un sensor
+async def receive_sensor_data(sensor_info):
+    sensor_name = sensor_info["name"]
+    sensor_port = sensor_info["port"]
+    print(f"Escuchando datos del {sensor_name} en el puerto {sensor_port}...")
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("127.0.0.1", sensor_port))
+    while True:
+        data, _ = await loop.run_in_executor(None, sock.recvfrom, BUFFER_SIZE)
+        decoded_data = data.decode("utf-8")
+        print(f"Datos del {sensor_name} recibidos:", decoded_data)
 
-# Ruta para mostrar los datos del sensor
+# Ruta para mostrar el estado de la API
 @app.get("/sensor-data/")
 async def get_sensor_data():
-    return {"message": "La API está escuchando datos del sensor"}
+    return {"message": "La API está escuchando datos de los sensores"}
 
-# Función para recibir y mostrar los datos del sensor a través del socket UDP
-def receive_sensor_data_udp():
-    print("Escuchando datos del sensor...")
-    while True:
-        data, _ = sock.recvfrom(BUFFER_SIZE)  # Recibir datos del sensor
-        # Decodificar los datos recibidos (si es necesario)
-        decoded_data = data.decode("utf-8")
-        print("Datos del sensor recibidos:", decoded_data)
+# Iniciar la recepción de datos de los sensores
+async def start_sensor_listening():
+    tasks = [receive_sensor_data(sensor_info) for sensor_info in SENSOR_INFO]
+    await asyncio.gather(*tasks)
 
-# Iniciar la recepción de datos del sensor en un hilo separado
-import threading
-threading.Thread(target=receive_sensor_data_udp).start()
+# Iniciar el bucle de eventos de asyncio y mantenerlo activo
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.create_task(start_sensor_listening())
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.close()
