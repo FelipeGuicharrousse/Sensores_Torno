@@ -4,7 +4,7 @@ import random
 
 # Configuración del servidor UDP
 UDP_IP = "127.0.0.1"  # Dirección IP local
-UDP_PORT = 5005       # Puerto para la comunicación UDP
+UDP_PORT = 5500       # Puerto para la comunicación UDP
 
 # Crear un socket UDP
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
