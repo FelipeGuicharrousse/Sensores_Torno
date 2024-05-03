@@ -1,6 +1,7 @@
 import socket
 import asyncio
 import re
+from datetime import datetime
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -36,9 +37,11 @@ async def receive_sensor_data(sensor_info):
         match = re.match(pattern, decoded_data)
         if match:
             data_values = match.groups()
-            # Guardar los datos en la base de datos
-            await collection.insert_one({"sensor_name": sensor_name, "data": data_values})
-            print("guardado")
+            # Obtener la fecha y hora actual
+            timestamp = datetime.now()
+            # Guardar los datos junto con la fecha y hora en la base de datos
+            await collection.insert_one({"timestamp": timestamp, "sensor_name": sensor_name, "data": data_values})
+            print("Datos guardados con éxito.")
         else:
             print(f"No se pudieron extraer datos del {sensor_name}:", decoded_data)
 
