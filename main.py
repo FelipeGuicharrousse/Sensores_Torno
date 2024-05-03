@@ -2,24 +2,32 @@ import socket
 import asyncio
 import re
 from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
 
 app = FastAPI()
 
 # Configurar la información de los sensores
 SENSOR_INFO = [
-    {"port": 5000, "name": "Sensor 1", "pattern": r"A ([+\-]?\d+\.\d+) ([+\-]?\d+) ([+\-]?\d+) ([+\-]?\d+) 0D 0A"},
-    {"port": 5500, "name": "Sensor 2", "pattern": r"A (\d+\.\d+) (\d+\.\d+) 0D 0A"},
-    {"port": 6000, "name": "Sensor 3", "pattern": r"B (\d+) 0D 0A"}
+    {"port": 5000, "name": "Sensor 1", "pattern": r"A ([+\-]?\d+\.\d+) ([+\-]?\d+) ([+\-]?\d+) ([+\-]?\d+) 0D 0A", "collection": "sensor_1_data"},
+    {"port": 5500, "name": "Sensor 2", "pattern": r"A (\d+\.\d+) (\d+\.\d+) 0D 0A", "collection": "sensor_2_data"},
+    {"port": 6000, "name": "Sensor 3", "pattern": r"B (\d+) 0D 0A", "collection": "sensor_3_data"}
 ]
 
 BUFFER_SIZE = 1024  # Tamaño del búfer de recepción
 
-# Función para recibir los datos de un sensor
+# Conexión a la base de datos MongoDB
+MONGO_URI = "mongodb://localhost:27017"
+client = AsyncIOMotorClient(MONGO_URI)
+db = client["sensors_db"]
+
+# Función para recibir los datos de un sensor y guardarlos en la base de datos
 async def receive_sensor_data(sensor_info):
     sensor_name = sensor_info["name"]
     sensor_port = sensor_info["port"]
     pattern = sensor_info["pattern"]
-    print(f"Escuchando datos del {sensor_name} en el puerto {sensor_port}...")
+    collection_name = sensor_info["collection"]
+    print(f"Escuchando datos del {sensor_name} en el puerto {sensor_port} y guardándolos en la colección {collection_name}...")
+    collection = db[collection_name]
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("127.0.0.1", sensor_port))
     while True:
@@ -28,7 +36,9 @@ async def receive_sensor_data(sensor_info):
         match = re.match(pattern, decoded_data)
         if match:
             data_values = match.groups()
-            print(f"Datos del {sensor_name} recibidos:", data_values)
+            # Guardar los datos en la base de datos
+            await collection.insert_one({"sensor_name": sensor_name, "data": data_values})
+            print("guardado")
         else:
             print(f"No se pudieron extraer datos del {sensor_name}:", decoded_data)
 
