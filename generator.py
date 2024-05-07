@@ -9,8 +9,8 @@ db = client["sensors_db"]
 
 # Definir el orden de las columnas para cada sensor
 SENSOR_COLUMNS = {
-    "Sensor 1": ["Temperatura", "Eje X", "Eje Y", "Eje Z"],
-    "Sensor 2": ["Humedad", "Temperatura (°C)"],
+    "Sensor 1": ["Temperatura (°C)", "Eje X", "Eje Y", "Eje Z"],
+    "Sensor 2": ["Humedad (%)", "Temperatura (°C)"],
     "Sensor 3": ["Velocidad (RPM)"]
 }
 
