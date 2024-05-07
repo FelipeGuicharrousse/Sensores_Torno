@@ -49,7 +49,27 @@ async def generate_excel_for_date(selected_date):
                 # Convertir los valores a números si es posible
                 for column in df.columns:
                     df[column] = pd.to_numeric(df[column])
-                df.insert(0, 'TimeStamp', timestamp_column)
+                df.insert(0, 'Timestamp', timestamp_column)
+                
+                # Calcular el promedio, máximo y mínimo para cada columna numérica
+                stats = {}
+                for column in df.columns:
+                    if pd.api.types.is_numeric_dtype(df[column]):
+                        stats[column] = {
+                            'Promedio': df[column].mean(),
+                            'Máximo': df[column].max(),
+                            'Mínimo': df[column].min()
+                        }
+                
+                # Crear un DataFrame para las filas 'Promedio', 'Máximo' y 'Mínimo'
+                stats_df = pd.DataFrame(stats)
+                stats_df.index = ['Promedio', 'Máximo', 'Mínimo']
+                stats_df = stats_df.reset_index()
+                stats_df = stats_df.rename(columns={'index': 'Timestamp'})
+                
+                # Agregar las filas al final del DataFrame del sensor
+                df = pd.concat([df, stats_df], ignore_index=True)
+                
             else:
                 print(f"No se encontró el orden de columnas para el sensor {sensor_name}.")
                 continue
