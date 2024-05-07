@@ -14,23 +14,27 @@ SENSOR_COLUMNS = {
     "Sensor 3": ["Velocidad (RPM)"]
 }
 
-async def generate_excel():
-    # Crear un archivo Excel
-    file_name = f"sensor_data_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
+async def generate_excel_for_date(selected_date):
+    # Formatear la fecha seleccionada para que coincida con el formato de la base de datos
+    selected_date_str = selected_date.strftime('%Y-%m-%d')
+    next_day = (selected_date + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    # Crear un archivo Excel con el nombre basado en la fecha seleccionada
+    file_name = f"sensor_data_{selected_date_str}.xlsx"
     with pd.ExcelWriter(file_name, engine='xlsxwriter') as writer:
         for sensor_info in SENSOR_INFO:
             sensor_name = sensor_info["name"]
             collection_name = sensor_info["collection"]
             collection = db[collection_name]
             
-            # Consultar los datos del sensor
+            # Consultar los datos del sensor solo para la fecha seleccionada
             sensor_data = []
-            cursor = collection.find()
+            cursor = collection.find({"timestamp": {"$gte": datetime.combine(selected_date, datetime.min.time()), "$lt": datetime.combine(selected_date + pd.Timedelta(days=1), datetime.min.time())}})
             async for document in cursor:
                 sensor_data.append(document)
             
             if not sensor_data:
-                print(f"No hay datos disponibles para el sensor {sensor_name}.")
+                print(f"No hay datos disponibles para el sensor {sensor_name} en la fecha seleccionada.")
                 continue
             
             # Crear un DataFrame de Pandas con los datos del sensor
@@ -67,5 +71,9 @@ if __name__ == "__main__":
         {"port": 6000, "name": "Sensor 3", "collection": "sensor_3_data"}
     ]
 
+    # Solicitar al usuario la fecha deseada para generar el archivo Excel
+    input_date = input("Ingrese la fecha en formato YYYY-MM-DD: ")
+    selected_date = datetime.strptime(input_date, "%Y-%m-%d")
+
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(generate_excel())
+    loop.run_until_complete(generate_excel_for_date(selected_date))
