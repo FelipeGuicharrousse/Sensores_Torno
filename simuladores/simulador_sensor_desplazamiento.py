@@ -21,7 +21,7 @@ def simulate_sensor_desplazamiento():
 while True:
     temperatura, vibracion_x, vibracion_y, vibracion_z = simulate_sensor_desplazamiento()
     # Formato de los datos a enviar
-    data = f"A {temperatura:.1f} {'+' if vibracion_x >= 0 else '-'}{abs(vibracion_x):03d} {'+' if vibracion_y >= 0 else '-'}{abs(vibracion_y):03d} {'+' if vibracion_z >= 0 else '-'}{abs(vibracion_z):03d} 0D 0A"
+    data = f"A {temperatura:.1f} {'+' if vibracion_x >= 0 else '-'}{abs(vibracion_x):03d} {'+' if vibracion_y >= 0 else '-'}{abs(vibracion_y):03d} {'+' if vibracion_z >= 0 else '-'}{abs(vibracion_z):03d}"
     
     # Envía los datos al cliente
     sock.sendto(data.encode(), (UDP_IP, UDP_PORT))
