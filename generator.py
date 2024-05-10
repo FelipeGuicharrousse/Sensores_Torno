@@ -2,6 +2,7 @@ import pandas as pd
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
 
+
 # Conexión a la base de datos MongoDB
 MONGO_URI = "mongodb://localhost:27017"
 client = AsyncIOMotorClient(MONGO_URI)
@@ -86,9 +87,9 @@ if __name__ == "__main__":
 
     # Configurar la información de los sensores
     SENSOR_INFO = [
-        {"port": 5000, "name": "Sensor 1", "collection": "sensor_1_data"},
-        {"port": 5500, "name": "Sensor 2", "collection": "sensor_2_data"},
-        {"port": 6000, "name": "Sensor 3", "collection": "sensor_3_data"}
+        {"port": 5000, "name": "Torno 6", "collection": "torno_6_data"},
+        {"port": 5500, "name": "Humedad_Temperatura", "collection": "hum_temp_data"},
+        {"port": 6000, "name": "Torno 8", "collection": "torno_8_data"}
     ]
 
     # Solicitar al usuario la fecha deseada para generar el archivo Excel
