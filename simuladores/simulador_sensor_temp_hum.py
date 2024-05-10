@@ -20,7 +20,7 @@ def simulate_sensor_temp_hum():
 while True:
     temperatura, humedad = simulate_sensor_temp_hum()
     # Formato de los datos a enviar
-    data = f"A {humedad:.2f} {temperatura:.2f} 0D 0A"
+    data = f"A{humedad:.2f} {temperatura:.2f}"
 
     # Envía los datos al cliente
     sock.sendto(data.encode(), (UDP_IP, UDP_PORT))
