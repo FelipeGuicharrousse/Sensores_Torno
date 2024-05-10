@@ -9,10 +9,13 @@ app = FastAPI()
 
 # Configurar la información de los sensores
 SENSOR_INFO = [
-    {"port": 5000, "name": "Sensor 1", "pattern": r"A ([+\-]?\d+\.\d+) ([+\-]?\d+) ([+\-]?\d+) ([+\-]?\d+) 0D 0A", "collection": "sensor_1_data"},
-    {"port": 5500, "name": "Sensor 2", "pattern": r"A (\d+\.\d+) (\d+\.\d+) 0D 0A", "collection": "sensor_2_data"},
-    {"port": 6000, "name": "Sensor 3", "pattern": r"B (\d+) 0D 0A", "collection": "sensor_3_data"}
+    {"port": 5000, "name": "Torno 6", "collection": "torno_6_data"},
+    {"port": 5500, "name": "Hum_temp", "pattern": r"A(\d+\.\d+) (\d+\.\d+)", "collection": "hum_temp_data"},
+    {"port": 6000, "name": "Torno 8", "collection": "torno_8_data"}
 ]
+
+pattern_a = r"A ([+\-]?\d+\.\d+) ([+\-]?\d+) ([+\-]?\d+) ([+\-]?\d+)"
+pattern_b = r"B (\d+)"
 
 BUFFER_SIZE = 1024  # Tamaño del búfer de recepción
 
@@ -25,7 +28,6 @@ db = client["sensors_db"]
 async def receive_sensor_data(sensor_info):
     sensor_name = sensor_info["name"]
     sensor_port = sensor_info["port"]
-    pattern = sensor_info["pattern"]
     collection_name = sensor_info["collection"]
     print(f"Escuchando datos del {sensor_name} en el puerto {sensor_port} y guardándolos en la colección {collection_name}...")
     collection = db[collection_name]
@@ -34,7 +36,19 @@ async def receive_sensor_data(sensor_info):
     while True:
         data, _ = await loop.run_in_executor(None, sock.recvfrom, BUFFER_SIZE)
         decoded_data = data.decode("utf-8")
-        match = re.match(pattern, decoded_data)
+        if sensor_port == 5500:
+            match = re.match(sensor_info["pattern"], decoded_data)
+        elif sensor_port == 5000 or sensor_port == sensor_port == 6000:
+            if decoded_data.startswith("A"):
+                match = re.match(pattern_a, decoded_data)
+            elif decoded_data.startswith("B"):
+                match = re.match(pattern_b, decoded_data)
+            else:
+                print("Error en el formato de entrega")
+        else:
+            print("Error en el puerto recibido, el mensaje del puerto " + sensor_port + " es inesperado")
+            
+
         if match:
             data_values = match.groups()
             # Obtener la fecha y hora actual
