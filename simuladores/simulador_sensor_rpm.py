@@ -19,7 +19,7 @@ def simulate_sensor_rpm():
 while True:
     velocidad = simulate_sensor_rpm()
     # Formato de los datos a enviar
-    data = f"B {velocidad} 0D 0A"
+    data = f"B {velocidad}"
 
     # Envía los datos al cliente
     sock.sendto(data.encode(), (UDP_IP, UDP_PORT))
