@@ -19,8 +19,7 @@ fecha_inicial = datetime(2024, 5, 1)
 fecha_final = datetime.now()  
 
 async def generate_excel_for_date():
-    
-    # Crear un archivo Excel con el nombre basado en la fecha seleccionada
+
     file_name = f"sensor_data.xlsx"
     with pd.ExcelWriter(file_name, engine='xlsxwriter') as writer:
         for sensor_info in SENSOR_INFO:
