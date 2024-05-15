@@ -8,16 +8,6 @@ MONGO_URI = "mongodb://localhost:27017"
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["sensors_db"]
 
-# Definir el orden de las columnas para cada sensor
-SENSOR_COLUMNS = {
-    "Torno 6": ["Temperatura (°C)", "Eje X", "Eje Y", "Eje Z"],
-    "Torno 8": ["Velocidad (RPM)"]
-}
-
-case_displacement = ["Temperatura (°C)", "Eje X", "Eje Y", "Eje Z"]
-case_speed = ["Velocidad (RPM)"]
-
-
 fecha_inicial = datetime(2024, 5, 1) 
 fecha_final = datetime.now()  
 
@@ -50,12 +40,10 @@ async def generate_excel_for_date():
                 async for document in hum_temp:
                     hum_temp_data.append(document)
                 
-                
                 # Crear un DataFrame de Pandas con los datos del sensor
                 df = pd.DataFrame(sensor_data)
                 df_hum_temp = pd.DataFrame(hum_temp_data)
                 new_df = pd.DataFrame()
-                temp_dfs = pd.DataFrame()
 
                 # Procesar cada dato individualmente
                 for index, row in df.iterrows():
@@ -81,14 +69,10 @@ async def generate_excel_for_date():
                     df = pd.concat([df, new_df], ignore_index=False)
                 # df ya esta con todos sus datos
 
-
                 # Crear columnas para cada sensor según el orden definido
 
-                columns_order = SENSOR_COLUMNS[sensor_name]
                 columns_hum_temp = ["Humedad (%)", "Temperatura (°C)"]
-                timestamp_column = df['timestamp']
                 df_hum_temp = pd.DataFrame(df_hum_temp["data"].tolist(), columns=columns_hum_temp)
-
 
                 for column in df_hum_temp.columns:
                     df_hum_temp[column] = pd.to_numeric(df_hum_temp[column])
