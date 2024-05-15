@@ -14,6 +14,9 @@ SENSOR_COLUMNS = {
     "Torno 8": ["Velocidad (RPM)"]
 }
 
+case_displacement = ["Temperatura (°C)", "Eje X", "Eje Y", "Eje Z"]
+case_speed = ["Velocidad (RPM)"]
+
 
 fecha_inicial = datetime(2024, 5, 1) 
 fecha_final = datetime.now()  
@@ -51,59 +54,77 @@ async def generate_excel_for_date():
                 # Crear un DataFrame de Pandas con los datos del sensor
                 df = pd.DataFrame(sensor_data)
                 df_hum_temp = pd.DataFrame(hum_temp_data)
+                new_df = pd.DataFrame()
+                temp_dfs = pd.DataFrame()
+
+                # Procesar cada dato individualmente
+                for index, row in df.iterrows():
+                    data_length = len(row["data"])
+                    if data_length == 1:
+                        try:
+                            dato = float(row["data"][0])
+                        except ValueError:
+                            print(f"No se pudo convertir el dato {row['data'][0]} a número.")
+                            continue
+                        new_df = pd.DataFrame([[dato]], columns=["Velocidad (RPM)"])
+                        pass
+                    elif data_length == 4:
+                        try:
+                            datos = [float(value) for value in row["data"]]
+                        except ValueError as e:
+                            print(f"No se pudo convertir los datos {row['data']} a números: {e}.")
+                            continue
+                        new_df = pd.DataFrame([datos], columns=["Temperatura (°C)", "Eje X", "Eje Y", "Eje Z"])
+                        pass
+                    else:
+                        print(f"Longitud de datos no compatible para el sensor {sensor_name}")
+                    df = pd.concat([df, new_df], ignore_index=False)
+                # df ya esta con todos sus datos
+
 
                 # Crear columnas para cada sensor según el orden definido
-                if sensor_name in SENSOR_COLUMNS:
-                    columns_order = SENSOR_COLUMNS[sensor_name]
-                    columns_hum_temp = ["Humedad (%)", "Temperatura (°C)"]
-                    timestamp_column = df['timestamp']
-                    df = pd.DataFrame(df["data"].tolist(), columns=columns_order)
-                    df_hum_temp = pd.DataFrame(df_hum_temp["data"].tolist(), columns=columns_hum_temp)
 
-                    # Convertir los valores a números si es posible
-                    for column in df.columns:
-                        df[column] = pd.to_numeric(df[column])
-                    df.insert(0, 'Timestamp', timestamp_column)
+                columns_order = SENSOR_COLUMNS[sensor_name]
+                columns_hum_temp = ["Humedad (%)", "Temperatura (°C)"]
+                timestamp_column = df['timestamp']
+                df_hum_temp = pd.DataFrame(df_hum_temp["data"].tolist(), columns=columns_hum_temp)
 
-                    for column in df_hum_temp.columns:
-                        df_hum_temp[column] = pd.to_numeric(df_hum_temp[column])
-                    
-                    # Calcular el promedio, máximo y mínimo para cada columna numérica
-                    stats = {}
-                    for column in df.columns:
-                        if pd.api.types.is_numeric_dtype(df[column]):
-                            stats[column] = {
-                                'Promedio': df[column].mean(),
-                                'Máximo': df[column].max(),
-                                'Mínimo': df[column].min()
-                            }
-                    
-                    # Calcular ahora lo mismo pero del sensor de humedad y temperatura
-                    stats_hum_temp = {}
-                    for column in df_hum_temp.columns:
-                        if pd.api.types.is_numeric_dtype(df_hum_temp[column]):
-                            stats_hum_temp[column] = {
-                                'Promedio': df_hum_temp[column].mean(),
-                                'Máximo': df_hum_temp[column].max(),
-                                'Mínimo': df_hum_temp[column].min()
-                            }
 
-                    # Crear un DataFrame para las filas 'Promedio', 'Máximo' y 'Mínimo'
-                    stats_df = pd.DataFrame(stats)
-                    stats_df.index = ['Promedio', 'Máximo', 'Mínimo']
-                    stats_df = stats_df.reset_index()
-                    stats_df = stats_df.rename(columns={'index': fecha_final.strftime("%d-%m-%Y")})
-                    
-                    stats_hum_temp_df = pd.DataFrame(stats_hum_temp)
-                    stats_df.index = ['Promedio', 'Máximo', 'Mínimo']
+                for column in df_hum_temp.columns:
+                    df_hum_temp[column] = pd.to_numeric(df_hum_temp[column])
+                
+                # Calcular el promedio, máximo y mínimo para cada columna numérica
+                stats = {}
+                for column in df.columns:
+                    if pd.api.types.is_numeric_dtype(df[column]):
+                        stats[column] = {
+                            'Promedio': df[column].mean(),
+                            'Máximo': df[column].max(),
+                            'Mínimo': df[column].min()
+                        }
+                
+                # Calcular ahora lo mismo pero del sensor de humedad y temperatura
+                stats_hum_temp = {}
+                for column in df_hum_temp.columns:
+                    if pd.api.types.is_numeric_dtype(df_hum_temp[column]):
+                        stats_hum_temp[column] = {
+                            'Promedio': df_hum_temp[column].mean(),
+                            'Máximo': df_hum_temp[column].max(),
+                            'Mínimo': df_hum_temp[column].min()
+                        }
 
-                    stats_df = pd.concat([stats_df, stats_hum_temp_df], axis=1)
-                    # Agregar las filas al final del DataFrame del sensor
-                    df_final = pd.concat([df_final, stats_df], ignore_index=True)
+                # Crear un DataFrame para las filas 'Promedio', 'Máximo' y 'Mínimo'
+                stats_df = pd.DataFrame(stats)
+                stats_df.index = ['Promedio', 'Máximo', 'Mínimo']
+                stats_df = stats_df.reset_index()
+                stats_df = stats_df.rename(columns={'index': fecha_final.strftime("%d-%m-%Y")})
+                
+                stats_hum_temp_df = pd.DataFrame(stats_hum_temp)
+                stats_df.index = ['Promedio', 'Máximo', 'Mínimo']
 
-                 
-                else:
-                    print(f"No se encontró el orden de columnas para el sensor {sensor_name}.")
+                stats_df = pd.concat([stats_df, stats_hum_temp_df], axis=1)
+                # Agregar las filas al final del DataFrame del sensor
+                df_final = pd.concat([df_final, stats_df], ignore_index=True)
 
                 fecha_actual += timedelta(days=1) 
                 
