@@ -1,7 +1,7 @@
 import socket
 import asyncio
 import re
-from datetime import datetime
+from datetime import datetime, time
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -23,6 +23,10 @@ BUFFER_SIZE = 1024  # Tamaño del búfer de recepción
 MONGO_URI = "mongodb://localhost:27017"
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["sensors_db"]
+
+# Define las horas de inicio y fin para la aceptación de datos (9am y 5pm)
+start_time = time(9, 0)  # 9am
+end_time = time(17, 0)   # 5pm
 
 # Función para recibir los datos de un sensor y guardarlos en la base de datos
 async def receive_sensor_data(sensor_info):
@@ -47,17 +51,21 @@ async def receive_sensor_data(sensor_info):
                 print("Error en el formato de entrega")
         else:
             print("Error en el puerto recibido, el mensaje del puerto " + sensor_port + " es inesperado")
-            
 
-        if match:
-            data_values = match.groups()
-            # Obtener la fecha y hora actual
-            timestamp = datetime.now()
-            # Guardar los datos junto con la fecha y hora en la base de datos
-            await collection.insert_one({"timestamp": timestamp, "sensor_name": sensor_name, "data": data_values})
-            print("Datos guardados con éxito.")
+        current_time = datetime.now().time()
+
+        if start_time <= current_time <= end_time:
+            if match:
+                data_values = match.groups()
+                # Obtener la fecha y hora actual
+                timestamp = datetime.now()
+                # Guardar los datos junto con la fecha y hora en la base de datos
+                await collection.insert_one({"timestamp": timestamp, "sensor_name": sensor_name, "data": data_values})
+                print("Datos guardados con éxito.")
+            else:
+                print(f"No se pudieron extraer datos del {sensor_name}:", decoded_data)
         else:
-            print(f"No se pudieron extraer datos del {sensor_name}:", decoded_data)
+            print("No se están guardando datos fuera del rango de tiempo permitido (9 am - 5 pm). Hora actual: " + str(current_time))
 
 # Ruta para mostrar el estado de la API
 @app.get("/sensor-data/")
