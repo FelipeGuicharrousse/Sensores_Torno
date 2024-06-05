@@ -36,7 +36,7 @@ async def receive_sensor_data(sensor_info):
     print(f"Escuchando datos del {sensor_name} en el puerto {sensor_port} y guardándolos en la colección {collection_name}...")
     collection = db[collection_name]
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("127.0.0.1", sensor_port))
+    sock.bind(("192.168.0.150", sensor_port))
     while True:
         data, _ = await loop.run_in_executor(None, sock.recvfrom, BUFFER_SIZE)
         decoded_data = data.decode("utf-8")
