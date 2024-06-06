@@ -60,7 +60,12 @@ async def receive_sensor_data(sensor_info):
                 # Obtener la fecha y hora actual
                 timestamp = datetime.now()
                 # Guardar los datos junto con la fecha y hora en la base de datos
-                await collection.insert_one({"timestamp": timestamp, "sensor_name": sensor_name, "data": data_values})
+                if len(data_values) == 4:
+                    await collection.insert_one({"timestamp": timestamp, "sensor_name": sensor_name, "temperatura": data_values[0], "eje_x": data_values[1], "eje_y": data_values[2], "eje_z": data_values[3],})
+                elif len(data_values) == 2:
+                    await collection.insert_one({"timestamp": timestamp, "sensor_name": sensor_name, "humedad": data_values[0], "temperatura_ambiental": data_values[1],})
+                else:
+                    await collection.insert_one({"timestamp": timestamp, "sensor_name": sensor_name, "velocidad": data_values[0]})
                 print("Datos guardados con éxito.")
             else:
                 print(f"No se pudieron extraer datos del {sensor_name}:", decoded_data)
