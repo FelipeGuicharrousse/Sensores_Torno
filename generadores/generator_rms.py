@@ -74,32 +74,32 @@ async def generate_excel_rms():
             numeric_columns = ['temperatura', 'eje_x', 'eje_y', 'eje_z', 'velocidad', 'humedad', 'temperatura_ambiental']
             combined_df[numeric_columns] = combined_df[numeric_columns].apply(pd.to_numeric, errors='coerce')
 
-            # Agrupar por hora y calcular la media
-            grouped_df = combined_df.groupby(pd.Grouper(freq='H')).mean()
+            # Agrupar por hora y calcular la media y el RMS
+            grouped_df = combined_df.groupby(pd.Grouper(freq='h')).agg({
+                'eje_x': calculate_rms,
+                'eje_y': calculate_rms,
+                'eje_z': calculate_rms,
+                'temperatura': 'mean',
+                'velocidad': 'mean',
+                'humedad': 'mean',
+                'temperatura_ambiental': 'mean'
+            })
 
-            # Reindexar para asegurarse de que todas las horas estén presentes
-            all_hours = pd.date_range(grouped_df.index.min(), grouped_df.index.max(), freq='H')
-            hourly_df = grouped_df.reindex(all_hours)
+            # Renombrar columnas RMS
+            grouped_df.rename(columns={
+                'eje_x': 'RMS eje_x',
+                'eje_y': 'RMS eje_y',
+                'eje_z': 'RMS eje_z'
+            }, inplace=True)
 
-            # Eliminar filas que tienen todos los valores NaN
-            hourly_df.dropna(how='all', inplace=True)
+            # Eliminar filas donde todas las columnas RMS sean 0
+            grouped_df = grouped_df[~((grouped_df['RMS eje_x'] == 0) & (grouped_df['RMS eje_y'] == 0) & (grouped_df['RMS eje_z'] == 0))]
 
-            if hourly_df.empty:
+            if grouped_df.empty:
                 print(f"No data found for {sensor_name} in the specified time range. Skipping...")
                 continue
 
-            # Llenar NaN con 0 o cualquier valor adecuado según tu caso
-            hourly_df.fillna(0, inplace=True)  # Puedes cambiar 0 por otro valor adecuado
-
-            # Calcular RMS para cada eje si existen las columnas
-            if 'eje_x' in hourly_df.columns:
-                hourly_df['rms_x'] = hourly_df['eje_x'].apply(calculate_rms)
-            if 'eje_y' in hourly_df.columns:
-                hourly_df['rms_y'] = hourly_df['eje_y'].apply(calculate_rms)
-            if 'eje_z' in hourly_df.columns:
-                hourly_df['rms_z'] = hourly_df['eje_z'].apply(calculate_rms)
-
-            hourly_df.to_excel(writer, sheet_name=sensor_name, index=True)
+            grouped_df.to_excel(writer, sheet_name=sensor_name, index=True)
             print(f"Data for sensor {sensor_name} written to the '{sensor_name}' sheet in the Excel file.")
 
     print(f"Excel file '{file_name}' generated successfully.")
